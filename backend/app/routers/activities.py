@@ -86,9 +86,17 @@ def sync_activities(
             existing.name = raw.get("activityName")
             existing.sport_type = garmin_client.normalize_sport_type(activity_type)
             existing.start_date = raw.get("startTimeGMT") or raw.get("startTimeLocal")
+            elapsed = raw.get("duration")
+            moving = raw.get("movingDuration") or elapsed
+            # Garmin occasionally reports a wildly corrupted movingDuration on
+            # some pool swims (seen: ~193h for a 61-minute swim). Moving time
+            # can never exceed elapsed time, so fall back when that happens.
+            if moving is not None and elapsed is not None and moving > elapsed:
+                moving = elapsed
+
             existing.distance_m = raw.get("distance")
-            existing.moving_time_s = raw.get("movingDuration") or raw.get("duration")
-            existing.elapsed_time_s = raw.get("duration")
+            existing.moving_time_s = moving
+            existing.elapsed_time_s = elapsed
             existing.total_elevation_gain_m = raw.get("elevationGain")
             existing.average_speed_mps = raw.get("averageSpeed")
             existing.max_speed_mps = raw.get("maxSpeed")
@@ -109,7 +117,7 @@ def sync_activities(
 def list_activities(
     athlete_id: int | None = None,
     sport_type: str | None = Query(default=None, description="Filter e.g. Run, Ride, Swim"),
-    limit: int = Query(default=50, ge=1, le=200),
+    limit: int = Query(default=50, ge=1, le=1000),
     db: Session = Depends(get_db),
 ):
     athlete = _get_athlete(db, athlete_id)

@@ -6,8 +6,8 @@ eventually recommend workouts and explain your data via AI.
 
 ## Build plan
 
-1. ✅ **Connect one workout API (Garmin) + database** — this phase
-2. Basic dashboard (Next.js, reads from the API)
+1. ✅ **Connect one workout API (Garmin) + database**
+2. ✅ **Basic dashboard (Next.js, reads from the API)** — this phase
 3. Weather + calendar data
 4. Training analytics (load, pace/HR trends)
 5. Recovery & fitness scores
@@ -18,7 +18,8 @@ eventually recommend workouts and explain your data via AI.
 
 - **Backend:** Python 3.12 / FastAPI, SQLAlchemy 2.0, Alembic migrations
 - **Database:** PostgreSQL 16 (installed locally as a native Windows service)
-- **Frontend:** React / Next.js — not scaffolded yet, comes in Phase 2
+- **Frontend:** Next.js 16 (App Router, TypeScript, Tailwind CSS 4) — Server Components fetch
+  directly from the backend, no client-side data fetching yet
 
 ## Project layout
 
@@ -41,8 +42,17 @@ ironman-coach/
 │   ├── alembic/                Migrations
 │   ├── requirements.txt
 │   └── .env                    Local secrets (gitignored) — copy from .env.example
-└── frontend/                   Phase 2
+└── frontend/
+    ├── src/app/page.tsx        Dashboard (Server Component, fetches from backend)
+    ├── src/components/         SummaryCard, SportTabs, ActivityTable
+    ├── src/lib/                api.ts (fetch), format.ts, summary.ts
+    └── .env.local               API_BASE_URL (gitignored)
 ```
+
+**Note:** Next.js 16 is new enough that Claude's training data doesn't reliably cover it —
+its own `AGENTS.md` (auto-generated in `frontend/`) says as much. Check
+`frontend/node_modules/next/dist/docs/` for the real API before assuming old patterns
+(e.g. `params`/`searchParams` are now Promises) still apply.
 
 ## One-time setup already done on this machine
 
@@ -96,11 +106,24 @@ curl http://localhost:8000/auth/garmin/status
 ### 4. Pull your activities
 
 ```bash
-curl -X POST "http://localhost:8000/activities/sync?pages=3"
+curl -X POST "http://localhost:8000/activities/sync?pages=10"
 curl "http://localhost:8000/activities?sport_type=Run"
 ```
 
 Interactive API docs are always at http://localhost:8000/docs once the server is running.
+
+### 5. Run the frontend (in a second terminal, backend still running)
+
+```bash
+cd frontend
+npm run dev
+```
+
+Open http://localhost:3000 — summary cards for the last 28 days by sport, plus a filterable
+table of recent activities. If PowerShell blocks `.venv\Scripts\activate` with a "running
+scripts is disabled" error, either call `.venv\Scripts\python.exe` directly instead, or run
+`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once (recommended — you'll hit the same
+block with npm/npx otherwise).
 
 ## Notes / decisions
 
@@ -113,3 +136,11 @@ Interactive API docs are always at http://localhost:8000/docs once the server is
   source (e.g. Strava, if you ever get API access) could be added later without a schema change.
 - Single-athlete convenience: most endpoints work without `athlete_id` as long as only one
   Garmin account is connected. This will need to change before "other athletes" support (Phase 7).
+- Garmin occasionally reports a corrupted `movingDuration` on pool swims (seen: ~193 hours for
+  a 61-minute swim). `activities.py` clamps moving time to elapsed time when this happens —
+  worth remembering if other odd Garmin fields show up later (elevation gain/loss has also
+  shown clearly-wrong values on some activities; not yet worth a fix since nothing depends on
+  it yet, but flag it if Phase 4 analytics needs elevation).
+- **Windows dev-server quirk:** if you ever run `next dev` from a directory referenced by its
+  8.3 short path (e.g. `KYLERC~1` instead of `Kyler Chou`), Next's file watcher crashes with a
+  libuv assertion (`fs-event.c` path mismatch). Always launch it via the normal long path.
