@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
 from app.models import Activity, Athlete
 from app.schemas import ActivityOut, SyncResult
-from app.services import strava_client
+from app.services import garmin_client
 
 router = APIRouter(tags=["activities"])
 
@@ -23,7 +24,8 @@ def _get_athlete(db: Session, athlete_id: int | None) -> Athlete:
     if len(athletes) == 0:
         raise HTTPException(
             status_code=404,
-            detail="No connected athletes yet. Visit /auth/strava/login first.",
+            detail="No connected athletes yet. Run `POST /activities/sync` once you've "
+            "completed `python scripts/garmin_login.py`.",
         )
     if len(athletes) > 1:
         raise HTTPException(
@@ -33,48 +35,69 @@ def _get_athlete(db: Session, athlete_id: int | None) -> Athlete:
     return athletes[0]
 
 
+def _get_or_create_athlete(db: Session, client) -> Athlete:
+    key = settings.garmin_email or client.get_full_name() or "default"
+    athlete = db.query(Athlete).filter_by(garmin_email=key).one_or_none()
+    if athlete is None:
+        athlete = Athlete(garmin_email=key, display_name=client.get_full_name())
+        db.add(athlete)
+        db.flush()
+    else:
+        athlete.display_name = client.get_full_name()
+    return athlete
+
+
 @router.post("/activities/sync", response_model=SyncResult)
 def sync_activities(
-    athlete_id: int | None = None,
     pages: int = Query(default=1, ge=1, le=10, description="How many pages of 100 to pull"),
     db: Session = Depends(get_db),
 ):
-    """Pull recent activities from Strava and upsert them into the database."""
-    athlete = _get_athlete(db, athlete_id)
-    access_token = strava_client.ensure_fresh_token(athlete)
+    """Pull recent activities from Garmin and upsert them into the database."""
+    try:
+        client = garmin_client.get_client()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+
+    athlete = _get_or_create_athlete(db, client)
 
     fetched, created, updated = 0, 0, 0
-    for page in range(1, pages + 1):
-        batch = strava_client.fetch_activities(access_token, per_page=100, page=page)
+    for page in range(pages):
+        batch = garmin_client.fetch_activities(client, start=page * 100, limit=100)
         if not batch:
             break
         fetched += len(batch)
 
         for raw in batch:
+            external_id = raw["activityId"]
             existing = (
                 db.query(Activity)
-                .filter_by(strava_activity_id=raw["id"])
+                .filter_by(source="garmin", external_id=external_id)
                 .one_or_none()
             )
             if existing is None:
-                existing = Activity(athlete_id=athlete.id, strava_activity_id=raw["id"])
+                existing = Activity(athlete_id=athlete.id, source="garmin", external_id=external_id)
                 db.add(existing)
                 created += 1
             else:
                 updated += 1
 
-            existing.name = raw.get("name")
-            existing.sport_type = raw.get("sport_type") or raw.get("type", "Unknown")
-            existing.start_date = raw["start_date"]
+            activity_type = (raw.get("activityType") or {}).get("typeKey")
+
+            existing.name = raw.get("activityName")
+            existing.sport_type = garmin_client.normalize_sport_type(activity_type)
+            existing.start_date = raw.get("startTimeGMT") or raw.get("startTimeLocal")
             existing.distance_m = raw.get("distance")
-            existing.moving_time_s = raw.get("moving_time")
-            existing.elapsed_time_s = raw.get("elapsed_time")
-            existing.total_elevation_gain_m = raw.get("total_elevation_gain")
-            existing.average_speed_mps = raw.get("average_speed")
-            existing.max_speed_mps = raw.get("max_speed")
-            existing.average_heartrate = raw.get("average_heartrate")
-            existing.max_heartrate = raw.get("max_heartrate")
-            existing.average_cadence = raw.get("average_cadence")
+            existing.moving_time_s = raw.get("movingDuration") or raw.get("duration")
+            existing.elapsed_time_s = raw.get("duration")
+            existing.total_elevation_gain_m = raw.get("elevationGain")
+            existing.average_speed_mps = raw.get("averageSpeed")
+            existing.max_speed_mps = raw.get("maxSpeed")
+            existing.average_heartrate = raw.get("averageHR")
+            existing.max_heartrate = raw.get("maxHR")
+            existing.average_cadence = (
+                raw.get("averageRunningCadenceInStepsPerMinute")
+                or raw.get("averageBikingCadenceInRevPerMinute")
+            )
             existing.calories = raw.get("calories")
             existing.raw = raw
 

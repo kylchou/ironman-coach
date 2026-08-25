@@ -7,3 +7,9 @@ pydantic==2.10.4
 pydantic-settings==2.7.0
 httpx==0.28.1
 python-dotenv==1.0.1
+
+# Unofficial, actively-developed Garmin Connect client. Left unpinned since
+# it moves fast keeping up with Garmin's undocumented endpoints -- if
+# something breaks, check https://github.com/cyberjunky/python-garminconnect
+# for API changes before assuming the bug is in our code.
+garminconnect

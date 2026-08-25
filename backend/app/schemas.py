@@ -7,7 +7,8 @@ class ActivityOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    strava_activity_id: int
+    source: str
+    external_id: int
     name: str | None
     sport_type: str
     start_date: datetime
@@ -27,9 +28,8 @@ class AthleteOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    strava_athlete_id: int
-    first_name: str | None
-    last_name: str | None
+    garmin_email: str
+    display_name: str | None
 
 
 class SyncResult(BaseModel):

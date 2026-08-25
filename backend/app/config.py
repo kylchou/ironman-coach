@@ -8,9 +8,10 @@ class Settings(BaseSettings):
 
     database_url: str
 
-    strava_client_id: str = ""
-    strava_client_secret: str = ""
-    strava_redirect_uri: str = "http://localhost:8000/auth/strava/callback"
+    # Informational only -- the Garmin password is never stored. Run
+    # scripts/garmin_login.py to authenticate; it prompts for the password
+    # interactively and caches session tokens to .garmin_tokens/.
+    garmin_email: str = ""
 
     secret_key: str = "dev-secret"
     frontend_origin: str = "http://localhost:3000"
