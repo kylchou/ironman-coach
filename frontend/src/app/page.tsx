@@ -1,9 +1,17 @@
-import { fetchActivities, fetchCurrentWeather, type Activity, type WeatherNow } from "@/lib/api";
+import {
+  fetchActivities,
+  fetchCurrentWeather,
+  fetchUpcomingEvents,
+  type Activity,
+  type CalendarEvent,
+  type WeatherNow,
+} from "@/lib/api";
 import { summarizeBySport } from "@/lib/summary";
 import { SummaryCard } from "@/components/SummaryCard";
 import { SportTabs } from "@/components/SportTabs";
 import { ActivityTable } from "@/components/ActivityTable";
 import { WeatherCard } from "@/components/WeatherCard";
+import { UpcomingEvents } from "@/components/UpcomingEvents";
 
 export default async function Home({
   searchParams,
@@ -34,6 +42,16 @@ export default async function Home({
     weatherError = err instanceof Error ? err.message : "Unknown error fetching weather.";
   }
 
+  // Same independence rule as weather -- calendar needs its own Google
+  // OAuth connection, which may not be set up yet.
+  let events: CalendarEvent[] = [];
+  let eventsError: string | null = null;
+  try {
+    events = await fetchUpcomingEvents(7);
+  } catch (err) {
+    eventsError = err instanceof Error ? err.message : "Unknown error fetching calendar.";
+  }
+
   const summaries = summarizeBySport(activities, 28);
   const visibleActivities =
     activeSport === "All" ? activities : activities.filter((a) => a.sport_type === activeSport);
@@ -52,14 +70,31 @@ export default async function Home({
         </div>
       ) : (
         <>
-          <div className="mt-6">
-            {weather ? (
-              <WeatherCard weather={weather} />
-            ) : (
-              <p className="text-sm text-slate-400 dark:text-slate-500">
-                Weather unavailable{weatherError ? `: ${weatherError}` : ""}
-              </p>
-            )}
+          <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              {weather ? (
+                <WeatherCard weather={weather} />
+              ) : (
+                <p className="text-sm text-slate-400 dark:text-slate-500">
+                  Weather unavailable{weatherError ? `: ${weatherError}` : ""}
+                </p>
+              )}
+            </div>
+
+            <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+              <div className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                Next 7 days
+              </div>
+              <div className="mt-2">
+                {eventsError ? (
+                  <p className="text-sm text-slate-400 dark:text-slate-500">
+                    Calendar not connected. See README to set up Google Calendar.
+                  </p>
+                ) : (
+                  <UpcomingEvents events={events} />
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">

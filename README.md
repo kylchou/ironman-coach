@@ -8,7 +8,7 @@ eventually recommend workouts and explain your data via AI.
 
 1. ✅ **Connect one workout API (Garmin) + database**
 2. ✅ **Basic dashboard (Next.js, reads from the API)**
-3. Weather ✅ + calendar data (weather done, calendar not started) — this phase
+3. ✅ **Weather + calendar data**
 4. Training analytics (load, pace/HR trends)
 5. Recovery & fitness scores
 6. AI-generated recommendations & explanations
@@ -91,6 +91,34 @@ activity was — right now that's Athens, GA (from "Athens Running"), not your u
 base, since it's literally just "most recent". If you want stable weather for your home base
 regardless of travel, set `LOCATION_LAT`/`LOCATION_LON` explicitly.
 
+## Calendar
+
+Reads your primary Google Calendar (read-only) via plain OAuth2 + REST calls, **not** Google's
+official `google-api-python-client`/`google-auth` libraries -- those pull in the `cryptography`
+package, whose native Rust extension is blocked by this machine's Application Control policy
+(confirmed while building this: the import itself fails with "An Application Control policy has
+blocked this file"). The web-server OAuth flow needs no client-side crypto -- it's just JSON over
+HTTPS -- so `httpx` calls avoid the problem entirely. See `services/calendar_client.py`.
+
+- `GET /auth/google/login` — open in a browser, approve access, get redirected back
+- `GET /auth/google/status` — check the connection
+- `GET /calendar/events?days=7` — upcoming events on your primary calendar
+
+### One-time Google Cloud Console setup (you'll need to do this yourself)
+
+1. Go to [console.cloud.google.com](https://console.cloud.google.com), create a new project
+   (e.g. "Ironman Coach").
+2. **APIs & Services → Library** → search "Google Calendar API" → **Enable**.
+3. **APIs & Services → OAuth consent screen**:
+   - User type: **External**
+   - Fill in app name, your email as support/developer contact
+   - **Test users**: add your own Google account email here — required, or Google will block
+     login with "app hasn't completed verification" since this app stays unpublished
+4. **APIs & Services → Credentials → Create Credentials → OAuth client ID**:
+   - Application type: **Web application**
+   - Authorized redirect URIs: `http://localhost:8000/auth/google/callback`
+   - Copy the **Client ID** and **Client Secret** into `backend/.env`
+
 ## What you still need to do
 
 ### 1. Log in to Garmin (one-time, interactive)
@@ -130,7 +158,22 @@ curl "http://localhost:8000/activities?sport_type=Run"
 
 Interactive API docs are always at http://localhost:8000/docs once the server is running.
 
-### 5. Run the frontend (in a second terminal, backend still running)
+### 5. Set up Google Calendar (see "Calendar" section above) and connect it
+
+Once `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` are in `backend/.env` and the backend has
+restarted to pick them up:
+
+```bash
+# open in a browser, not curl -- it's an interactive consent screen
+http://localhost:8000/auth/google/login
+```
+
+```bash
+curl http://localhost:8000/auth/google/status
+curl "http://localhost:8000/calendar/events?days=7"
+```
+
+### 6. Run the frontend (in a second terminal, backend still running)
 
 ```bash
 cd frontend
@@ -162,3 +205,8 @@ block with npm/npx otherwise).
 - **Windows dev-server quirk:** if you ever run `next dev` from a directory referenced by its
   8.3 short path (e.g. `KYLERC~1` instead of `Kyler Chou`), Next's file watcher crashes with a
   libuv assertion (`fs-event.c` path mismatch). Always launch it via the normal long path.
+- **This machine's Application Control policy blocks the `cryptography` package's native (Rust)
+  extension** -- confirmed while adding Google Calendar: `import google_auth_oauthlib` fails
+  with "An Application Control policy has blocked this file". Any future dependency that pulls
+  in `cryptography` (directly or transitively -- lots of auth/crypto-adjacent packages do) will
+  hit the same wall. Worth checking for early if a new library's import fails mysteriously.

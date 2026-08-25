@@ -4,6 +4,7 @@ __pycache__/
 *.pyc
 .env
 .garmin_tokens/
+.google_tokens/
 .env.local
 node_modules/
 .next/

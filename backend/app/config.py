@@ -18,6 +18,13 @@ class Settings(BaseSettings):
     location_lat: float | None = None
     location_lon: float | None = None
 
+    # Google Calendar OAuth (see README for how to create these in Google
+    # Cloud Console). Client secret is a real credential, unlike everything
+    # else in this file -- backend/.env is gitignored, never commit it.
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = "http://localhost:8000/auth/google/callback"
+
     secret_key: str = "dev-secret"
     frontend_origin: str = "http://localhost:3000"
 

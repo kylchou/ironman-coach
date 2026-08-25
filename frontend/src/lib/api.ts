@@ -40,6 +40,14 @@ export type WeatherNow = {
   daily_forecast: DailyWeather[];
 };
 
+export type CalendarEvent = {
+  id: string;
+  summary: string;
+  start: string;
+  end: string;
+  all_day: boolean;
+};
+
 const API_BASE_URL = process.env.API_BASE_URL ?? "http://localhost:8000";
 
 /** Fetches from the FastAPI backend. Runs server-side (this is only called
@@ -65,6 +73,14 @@ export async function fetchCurrentWeather(): Promise<WeatherNow> {
   const res = await fetch(`${API_BASE_URL}/weather/current`, { cache: "no-store" });
   if (!res.ok) {
     throw new Error(`Failed to fetch weather: ${res.status} ${await res.text()}`);
+  }
+  return res.json();
+}
+
+export async function fetchUpcomingEvents(days = 7): Promise<CalendarEvent[]> {
+  const res = await fetch(`${API_BASE_URL}/calendar/events?days=${days}`, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch calendar: ${res.status} ${await res.text()}`);
   }
   return res.json();
 }

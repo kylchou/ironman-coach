@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import activities, garmin_auth, weather
+from app.routers import activities, calendar, garmin_auth, google_auth, weather
 
 app = FastAPI(title="Ironman Coach API", version="0.1.0")
 
@@ -15,6 +15,8 @@ app.add_middleware(
 
 app.include_router(garmin_auth.router)
 app.include_router(weather.router)
+app.include_router(google_auth.router)
+app.include_router(calendar.router)
 app.include_router(activities.router)
 
 

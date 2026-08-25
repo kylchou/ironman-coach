@@ -63,3 +63,11 @@ class WeatherNowOut(BaseModel):
     longitude: float
     current: CurrentWeatherOut
     daily_forecast: list[DailyWeatherOut]
+
+
+class CalendarEventOut(BaseModel):
+    id: str
+    summary: str
+    start: str  # ISO datetime, or a bare date ("2026-08-26") if all-day
+    end: str
+    all_day: bool
