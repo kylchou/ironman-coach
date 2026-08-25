@@ -109,11 +109,18 @@ HTTPS -- so `httpx` calls avoid the problem entirely. See `services/calendar_cli
 1. Go to [console.cloud.google.com](https://console.cloud.google.com), create a new project
    (e.g. "Ironman Coach").
 2. **APIs & Services → Library** → search "Google Calendar API" → **Enable**.
-3. **APIs & Services → OAuth consent screen**:
+3. Configure the consent screen (Google renamed this "Google Auth Platform" sometime in
+   2025/2026 — sidebar wording varies, so if you can't find it, go straight to
+   `https://console.cloud.google.com/auth/audience?project=<your-project-number>` instead):
    - User type: **External**
    - Fill in app name, your email as support/developer contact
-   - **Test users**: add your own Google account email here — required, or Google will block
-     login with "app hasn't completed verification" since this app stays unpublished
+   - **Audience tab → Test users**: add your Google account email — required, or login fails
+     with `Error 403: access_denied`, since this app stays unpublished. **Skip this entirely if
+     the account you'll log in with is the same one that owns the Cloud project** — project
+     owners can always test the app, test-user status is only for other accounts.
+   - Note: test-user authorizations expire after 7 days per Google's policy — if
+     `/calendar/events` starts failing with an auth error after a week or so, just redo the
+     `/auth/google/login` step below.
 4. **APIs & Services → Credentials → Create Credentials → OAuth client ID**:
    - Application type: **Web application**
    - Authorized redirect URIs: `http://localhost:8000/auth/google/callback`
