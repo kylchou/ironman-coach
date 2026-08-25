@@ -1,8 +1,9 @@
-import { fetchActivities, type Activity } from "@/lib/api";
+import { fetchActivities, fetchCurrentWeather, type Activity, type WeatherNow } from "@/lib/api";
 import { summarizeBySport } from "@/lib/summary";
 import { SummaryCard } from "@/components/SummaryCard";
 import { SportTabs } from "@/components/SportTabs";
 import { ActivityTable } from "@/components/ActivityTable";
+import { WeatherCard } from "@/components/WeatherCard";
 
 export default async function Home({
   searchParams,
@@ -23,6 +24,16 @@ export default async function Home({
         : "Unknown error fetching activities.";
   }
 
+  // Weather is independent of activities -- don't let one failure take down
+  // the other (e.g. no GPS-tagged activity yet to derive a location from).
+  let weather: WeatherNow | null = null;
+  let weatherError: string | null = null;
+  try {
+    weather = await fetchCurrentWeather();
+  } catch (err) {
+    weatherError = err instanceof Error ? err.message : "Unknown error fetching weather.";
+  }
+
   const summaries = summarizeBySport(activities, 28);
   const visibleActivities =
     activeSport === "All" ? activities : activities.filter((a) => a.sport_type === activeSport);
@@ -41,6 +52,16 @@ export default async function Home({
         </div>
       ) : (
         <>
+          <div className="mt-6">
+            {weather ? (
+              <WeatherCard weather={weather} />
+            ) : (
+              <p className="text-sm text-slate-400 dark:text-slate-500">
+                Weather unavailable{weatherError ? `: ${weatherError}` : ""}
+              </p>
+            )}
+          </div>
+
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
             {summaries.length === 0 ? (
               <p className="text-sm text-slate-500 dark:text-slate-400">No activity in the last 28 days.</p>

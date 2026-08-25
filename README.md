@@ -7,8 +7,8 @@ eventually recommend workouts and explain your data via AI.
 ## Build plan
 
 1. ✅ **Connect one workout API (Garmin) + database**
-2. ✅ **Basic dashboard (Next.js, reads from the API)** — this phase
-3. Weather + calendar data
+2. ✅ **Basic dashboard (Next.js, reads from the API)**
+3. Weather ✅ + calendar data (weather done, calendar not started) — this phase
 4. Training analytics (load, pace/HR trends)
 5. Recovery & fitness scores
 6. AI-generated recommendations & explanations
@@ -72,6 +72,24 @@ talks to the same endpoints the Garmin Connect app/website use, authenticated as
 account. It's unofficial and could break if Garmin changes something internally — if
 `/activities/sync` suddenly fails, check https://github.com/cyberjunky/python-garminconnect
 for API changes before assuming it's a bug in this code.
+
+## Weather
+
+Uses [Open-Meteo](https://open-meteo.com) — free, no signup, no API key. Two endpoints:
+
+- `GET /weather/current` — live current conditions + 7-day forecast (not stored, changes
+  constantly)
+- `POST /weather/sync?days_back=N` — backfills `daily_weather` for the past N days, so it can
+  later be joined against training history (was it hot/rainy on the day of a given workout).
+  Already run once for the last 60 days.
+- `GET /weather/daily?start=&end=` — read the stored history back out
+
+**Location** is auto-derived from your most recent GPS-tagged activity (`startLatitude`/
+`startLongitude` in the raw Garmin payload) unless `LOCATION_LAT`/`LOCATION_LON` are set in
+`backend/.env`. Worth knowing: this means weather follows wherever your last recorded outdoor
+activity was — right now that's Athens, GA (from "Athens Running"), not your usual Chicago-area
+base, since it's literally just "most recent". If you want stable weather for your home base
+regardless of travel, set `LOCATION_LAT`/`LOCATION_LON` explicitly.
 
 ## What you still need to do
 

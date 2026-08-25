@@ -36,3 +36,30 @@ class SyncResult(BaseModel):
     fetched: int
     created: int
     updated: int
+
+
+class DailyWeatherOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    date: str
+    temp_max_f: float | None
+    temp_min_f: float | None
+    precipitation_in: float | None
+    wind_speed_max_mph: float | None
+    weather_code: int | None
+    conditions: str
+
+
+class CurrentWeatherOut(BaseModel):
+    temperature_f: float | None
+    conditions: str
+    weather_code: int | None
+    wind_speed_mph: float | None
+    relative_humidity_pct: float | None
+
+
+class WeatherNowOut(BaseModel):
+    latitude: float
+    longitude: float
+    current: CurrentWeatherOut
+    daily_forecast: list[DailyWeatherOut]

@@ -17,6 +17,29 @@ export type Activity = {
   calories: number | null;
 };
 
+export type DailyWeather = {
+  date: string;
+  temp_max_f: number | null;
+  temp_min_f: number | null;
+  precipitation_in: number | null;
+  wind_speed_max_mph: number | null;
+  weather_code: number | null;
+  conditions: string;
+};
+
+export type WeatherNow = {
+  latitude: number;
+  longitude: number;
+  current: {
+    temperature_f: number | null;
+    conditions: string;
+    weather_code: number | null;
+    wind_speed_mph: number | null;
+    relative_humidity_pct: number | null;
+  };
+  daily_forecast: DailyWeather[];
+};
+
 const API_BASE_URL = process.env.API_BASE_URL ?? "http://localhost:8000";
 
 /** Fetches from the FastAPI backend. Runs server-side (this is only called
@@ -34,6 +57,14 @@ export async function fetchActivities(opts: { sportType?: string; limit?: number
 
   if (!res.ok) {
     throw new Error(`Failed to fetch activities: ${res.status} ${await res.text()}`);
+  }
+  return res.json();
+}
+
+export async function fetchCurrentWeather(): Promise<WeatherNow> {
+  const res = await fetch(`${API_BASE_URL}/weather/current`, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch weather: ${res.status} ${await res.text()}`);
   }
   return res.json();
 }

@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import BigInteger, DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import BigInteger, Date, DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -58,3 +58,29 @@ class Activity(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
     athlete: Mapped["Athlete"] = relationship(back_populates="activities")
+
+
+class DailyWeather(Base):
+    """One day's weather at the training location (from Open-Meteo).
+
+    Single location for now, matching the single-athlete assumption
+    elsewhere -- revisit alongside Athlete if this ever supports multiple
+    people/locations.
+    """
+
+    __tablename__ = "daily_weather"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    date: Mapped[date] = mapped_column(Date, unique=True, index=True)
+
+    latitude: Mapped[float] = mapped_column(Float)
+    longitude: Mapped[float] = mapped_column(Float)
+
+    temp_max_f: Mapped[float | None] = mapped_column(Float, nullable=True)
+    temp_min_f: Mapped[float | None] = mapped_column(Float, nullable=True)
+    precipitation_in: Mapped[float | None] = mapped_column(Float, nullable=True)
+    wind_speed_max_mph: Mapped[float | None] = mapped_column(Float, nullable=True)
+    weather_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    raw: Mapped[dict] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
