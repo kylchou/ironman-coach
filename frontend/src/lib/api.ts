@@ -69,6 +69,22 @@ export type TrendPoint = {
   sessions: number;
 };
 
+export type Readiness = {
+  date: string;
+  score: number;
+  label: string;
+  fitness_ctl: number;
+  fatigue_atl: number;
+  form_tsb: number;
+  form_label: string;
+  components: {
+    tsb: { value: number; score: number }; // always present -- we compute this ourselves
+    hrv: { status: string | null; score: number | null };
+    sleep: { value: number | null; qualifier: string | null; score: number | null };
+    resting_hr: { value: number | null; baseline: number | null; score: number | null };
+  };
+};
+
 const API_BASE_URL = process.env.API_BASE_URL ?? "http://localhost:8000";
 
 /** Fetches from the FastAPI backend. Runs server-side (this is only called
@@ -102,6 +118,14 @@ export async function fetchUpcomingEvents(days = 7): Promise<CalendarEvent[]> {
   const res = await fetch(`${API_BASE_URL}/calendar/events?days=${days}`, { cache: "no-store" });
   if (!res.ok) {
     throw new Error(`Failed to fetch calendar: ${res.status} ${await res.text()}`);
+  }
+  return res.json();
+}
+
+export async function fetchReadiness(): Promise<Readiness> {
+  const res = await fetch(`${API_BASE_URL}/readiness/today`, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch readiness: ${res.status} ${await res.text()}`);
   }
   return res.json();
 }

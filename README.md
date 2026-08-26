@@ -10,7 +10,7 @@ eventually recommend workouts and explain your data via AI.
 2. ✅ **Basic dashboard (Next.js, reads from the API)**
 3. ✅ **Weather + calendar data**
 4. ✅ **Training analytics (load, pace/HR trends)**
-5. Recovery & fitness scores
+5. ✅ **Recovery & fitness scores**
 6. AI-generated recommendations & explanations
 7. (later) generalize beyond a single athlete
 
@@ -144,6 +144,36 @@ The dashboard's **Analytics** page (`/analytics`) charts this: a stacked bar of 
 sport, plus pace/HR trend lines with a sport switcher. Charts were built following the
 `dataviz` skill's method (validated categorical palette — Run/Ride/Swim get fixed slots 1/2/3,
 never cycled — checked with its `validate_palette.js` script rather than eyeballed).
+
+## Recovery & readiness score
+
+- `GET /readiness/today` — a 0-100 composite score + label (Primed / Ready / Manage fatigue /
+  Recover), shown as the hero number at the top of the dashboard
+- `GET /readiness/history?days=90` — daily Fitness (CTL) / Fatigue (ATL) / Form (TSB) series,
+  not yet charted anywhere (would make a nice Performance-Management-Chart-style addition to
+  `/analytics` later)
+
+**What it's built from**, blended by weight (missing components are simply left out and the
+rest renormalized, rather than the score failing outright):
+
+| Component | Weight | Source |
+|---|---|---|
+| Training Stress Balance (Form) | 35% | Computed from your own synced activities — see below |
+| HRV status | 30% | Garmin (`BALANCED` / `UNBALANCED` / `LOW`) — needs a fairly recent HRV-capable watch |
+| Sleep score | 25% | Garmin's own 0-100 sleep score |
+| Resting HR vs. 30-day baseline | 10% | Garmin |
+
+**Fitness/Fatigue/Form** uses the same model TrainingPeaks' Performance Management Chart is
+built on (Banister impulse-response): CTL is a 42-day rolling average of daily training load,
+ATL the 7-day version, TSB = CTL − ATL. This is **not** clinical TRIMP — see
+`backend/app/services/training_load.py` for why — and none of this is a medical score; it's a
+heuristic worth calibrating against how you actually feel once you've used it a while.
+
+**A real bug caught before shipping:** the per-activity load formula used minutes where the
+TSS-style convention it's supposed to follow expects hours, inflating every load number ~60x.
+Harmless for Phase 4's relative week-to-week bar chart, but it broke Phase 5 outright — TSB hit
++724 (should top out around +25-30) and permanently saturated the readiness score's Form
+component at 100, destroying its signal. Fixed in `training_load.py`; both phases now agree.
 
 ## What you still need to do
 

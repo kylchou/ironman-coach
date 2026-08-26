@@ -2,9 +2,11 @@ import Link from "next/link";
 import {
   fetchActivities,
   fetchCurrentWeather,
+  fetchReadiness,
   fetchUpcomingEvents,
   type Activity,
   type CalendarEvent,
+  type Readiness,
   type WeatherNow,
 } from "@/lib/api";
 import { summarizeBySport } from "@/lib/summary";
@@ -13,6 +15,7 @@ import { SportTabs } from "@/components/SportTabs";
 import { ActivityTable } from "@/components/ActivityTable";
 import { WeatherCard } from "@/components/WeatherCard";
 import { UpcomingEvents } from "@/components/UpcomingEvents";
+import { ReadinessCard } from "@/components/ReadinessCard";
 
 export default async function Home({
   searchParams,
@@ -53,6 +56,14 @@ export default async function Home({
     eventsError = err instanceof Error ? err.message : "Unknown error fetching calendar.";
   }
 
+  let readiness: Readiness | null = null;
+  let readinessError: string | null = null;
+  try {
+    readiness = await fetchReadiness();
+  } catch (err) {
+    readinessError = err instanceof Error ? err.message : "Unknown error fetching readiness.";
+  }
+
   const summaries = summarizeBySport(activities, 28);
   const visibleActivities =
     activeSport === "All" ? activities : activities.filter((a) => a.sport_type === activeSport);
@@ -81,6 +92,16 @@ export default async function Home({
         </div>
       ) : (
         <>
+          <div className="mt-6">
+            {readiness ? (
+              <ReadinessCard readiness={readiness} />
+            ) : (
+              <p className="text-sm text-slate-400 dark:text-slate-500">
+                Readiness unavailable{readinessError ? `: ${readinessError}` : ""}
+              </p>
+            )}
+          </div>
+
           <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div className="lg:col-span-2">
               {weather ? (

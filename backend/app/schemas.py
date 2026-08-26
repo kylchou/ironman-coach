@@ -92,3 +92,50 @@ class TrendPointOut(BaseModel):
     avg_heartrate: float | None
     distance_m: float
     sessions: int
+
+
+class DailyFitnessOut(BaseModel):
+    date: str
+    ctl: float  # "Fitness" -- 42-day rolling load average
+    atl: float  # "Fatigue" -- 7-day rolling load average
+    tsb: float  # "Form" -- ctl - atl
+
+
+class TsbComponentOut(BaseModel):
+    value: float
+    score: float
+
+
+class HrvComponentOut(BaseModel):
+    status: str | None
+    score: float | None
+
+
+class SleepComponentOut(BaseModel):
+    value: float | None
+    qualifier: str | None
+    score: float | None
+
+
+class RestingHrComponentOut(BaseModel):
+    value: float | None
+    baseline: float | None
+    score: float | None
+
+
+class ReadinessComponentsOut(BaseModel):
+    tsb: TsbComponentOut
+    hrv: HrvComponentOut
+    sleep: SleepComponentOut
+    resting_hr: RestingHrComponentOut
+
+
+class ReadinessOut(BaseModel):
+    date: str
+    score: float
+    label: str
+    fitness_ctl: float
+    fatigue_atl: float
+    form_tsb: float
+    form_label: str
+    components: ReadinessComponentsOut
