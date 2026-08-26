@@ -11,7 +11,7 @@ eventually recommend workouts and explain your data via AI.
 3. ✅ **Weather + calendar data**
 4. ✅ **Training analytics (load, pace/HR trends)**
 5. ✅ **Recovery & fitness scores**
-6. AI-generated recommendations & explanations
+6. ✅ **AI-generated recommendations & explanations** (code done -- needs your own free API key, see below)
 7. (later) generalize beyond a single athlete
 
 ## Stack
@@ -174,6 +174,35 @@ TSS-style convention it's supposed to follow expects hours, inflating every load
 Harmless for Phase 4's relative week-to-week bar chart, but it broke Phase 5 outright — TSB hit
 +724 (should top out around +25-30) and permanently saturated the readiness score's Form
 component at 100, destroying its signal. Fixed in `training_load.py`; both phases now agree.
+
+## AI coach
+
+`POST /coach/brief` gathers everything the app already knows -- readiness score and its
+components, training load over the last 4 weeks, activities from the last 14 days, the 4-day
+weather forecast, and the next 7 days of calendar events -- into one prompt and asks an LLM to
+explain your current state in plain language and suggest what to do next. Shown on the dashboard
+as an "AI Coach" card with a button (deliberately not auto-loaded on page view -- it's a real
+API call, triggered on demand).
+
+**Uses Gemini, not Claude.** Claude's API is pay-as-you-go (cheap here -- a few cents a call --
+but not $0); Gemini has a genuinely free tier (no credit card, just a Google account). Also
+avoids Google's *official* Python client libraries (`google-generativeai`) in favor of plain
+`httpx` REST calls, for the same `cryptography`-DLL-blocked reason documented in the Calendar
+section above.
+
+The model is configurable (`GEMINI_MODEL` in `.env`, default `gemini-2.5-flash`) since Google's
+free-tier lineup moves fast -- if it ever gets deprecated or moved off the free tier, bump this
+rather than changing code.
+
+### Setup
+
+1. Go to [aistudio.google.com/apikey](https://aistudio.google.com/apikey), sign in with a
+   Google account, create an API key. No credit card needed.
+2. Add it to `backend/.env`:
+   ```
+   GEMINI_API_KEY=your_key_here
+   ```
+3. Restart the backend, then click **Get today's brief** on the dashboard.
 
 ## What you still need to do
 

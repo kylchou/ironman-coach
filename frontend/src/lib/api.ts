@@ -85,7 +85,16 @@ export type Readiness = {
   };
 };
 
+export type CoachBrief = {
+  brief: string;
+  generated_at: string;
+};
+
 const API_BASE_URL = process.env.API_BASE_URL ?? "http://localhost:8000";
+// Client component (CoachCard) calls this directly from the browser, so it
+// needs the NEXT_PUBLIC_ prefix -- server-only API_BASE_URL isn't visible
+// to client bundles.
+export const CLIENT_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
 /** Fetches from the FastAPI backend. Runs server-side (this is only called
  * from Server Components), so there's no browser CORS involved and no

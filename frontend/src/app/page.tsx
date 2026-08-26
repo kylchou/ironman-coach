@@ -16,6 +16,7 @@ import { ActivityTable } from "@/components/ActivityTable";
 import { WeatherCard } from "@/components/WeatherCard";
 import { UpcomingEvents } from "@/components/UpcomingEvents";
 import { ReadinessCard } from "@/components/ReadinessCard";
+import { CoachCard } from "@/components/CoachCard";
 
 export default async function Home({
   searchParams,
@@ -92,7 +93,7 @@ export default async function Home({
         </div>
       ) : (
         <>
-          <div className="mt-6">
+          <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
             {readiness ? (
               <ReadinessCard readiness={readiness} />
             ) : (
@@ -100,6 +101,7 @@ export default async function Home({
                 Readiness unavailable{readinessError ? `: ${readinessError}` : ""}
               </p>
             )}
+            <CoachCard />
           </div>
 
           <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">

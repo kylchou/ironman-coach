@@ -3,40 +3,20 @@ from datetime import date, datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.config import settings
 from app.database import get_db
-from app.models import Activity, DailyWeather
+from app.models import DailyWeather
 from app.schemas import CurrentWeatherOut, DailyWeatherOut, SyncResult, WeatherNowOut
 from app.services import weather_client
+from app.services.location import get_location
 
 router = APIRouter(prefix="/weather", tags=["weather"])
 
 
 def _get_location(db: Session) -> tuple[float, float]:
-    """Fixed location from settings if set, otherwise the coordinates of the
-    most recent GPS-tagged activity (outdoor runs/rides carry startLatitude/
-    startLongitude in their raw Garmin payload).
-    """
-    if settings.location_lat is not None and settings.location_lon is not None:
-        return settings.location_lat, settings.location_lon
-
-    recent = (
-        db.query(Activity)
-        .filter(Activity.raw["startLatitude"].isnot(None))
-        .order_by(Activity.start_date.desc())
-        .first()
-    )
-    if recent is not None:
-        lat = recent.raw.get("startLatitude")
-        lon = recent.raw.get("startLongitude")
-        if lat is not None and lon is not None:
-            return lat, lon
-
-    raise HTTPException(
-        status_code=400,
-        detail="No location available. Set LOCATION_LAT/LOCATION_LON in backend/.env, "
-        "or sync at least one outdoor (GPS-tagged) activity first.",
-    )
+    try:
+        return get_location(db)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 def _daily_from_forecast_json(payload: dict) -> list[DailyWeatherOut]:

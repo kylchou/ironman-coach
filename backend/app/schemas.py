@@ -130,6 +130,11 @@ class ReadinessComponentsOut(BaseModel):
     resting_hr: RestingHrComponentOut
 
 
+class CoachBriefOut(BaseModel):
+    brief: str
+    generated_at: datetime
+
+
 class ReadinessOut(BaseModel):
     date: str
     score: float

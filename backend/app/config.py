@@ -25,6 +25,12 @@ class Settings(BaseSettings):
     google_client_secret: str = ""
     google_redirect_uri: str = "http://localhost:8000/auth/google/callback"
 
+    # AI coach (Phase 6). Free tier -- get a key at https://aistudio.google.com/apikey
+    # (no credit card). Model is configurable since Gemini's free-tier lineup moves
+    # fast; bump this if gemini_model ever gets deprecated/moved off free tier.
+    gemini_api_key: str = ""
+    gemini_model: str = "gemini-2.5-flash"
+
     secret_key: str = "dev-secret"
     frontend_origin: str = "http://localhost:3000"
 
