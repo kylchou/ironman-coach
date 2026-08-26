@@ -1,20 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { fetchRestingHrHistory, type RestingHrPoint } from "@/lib/api";
-import { formatWeekLabel } from "@/lib/format";
-import { LineChart } from "@/components/charts/LineChart";
+import { fetchHrvHistory, type HrvPoint } from "@/lib/api";
+import { HrvChart } from "@/components/charts/HrvChart";
 
 const RANGES = [
-  { label: "Today", days: 1 },
   { label: "This week", days: 7 },
   { label: "Last 4 weeks", days: 28 },
 ] as const;
 
-export function RestingHrHistory() {
+export function HrvHistory() {
   const [open, setOpen] = useState(false);
   const [days, setDays] = useState<number>(7);
-  const [points, setPoints] = useState<RestingHrPoint[] | null>(null);
+  const [points, setPoints] = useState<HrvPoint[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,7 +21,7 @@ export function RestingHrHistory() {
     setLoading(true);
     setError(null);
     try {
-      setPoints(await fetchRestingHrHistory(nextDays));
+      setPoints(await fetchHrvHistory(nextDays));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error.");
     } finally {
@@ -46,7 +44,7 @@ export function RestingHrHistory() {
         className="flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
       >
         <span className={`inline-block transition-transform ${open ? "rotate-90" : ""}`}>▸</span>
-        Resting HR history
+        HRV history
       </button>
 
       {open && (
@@ -70,17 +68,7 @@ export function RestingHrHistory() {
           <div className="mt-3">
             {loading && <p className="py-2 text-xs text-slate-400 dark:text-slate-500">Loading…</p>}
             {error && <p className="py-2 text-xs text-rose-600 dark:text-rose-400">{error}</p>}
-            {!loading && !error && points && points.length === 0 && (
-              <p className="py-2 text-xs text-slate-400 dark:text-slate-500">No data for this range.</p>
-            )}
-            {!loading && !error && points && points.length > 0 && (
-              <LineChart
-                title="Resting heart rate"
-                data={points.map((p) => ({ label: formatWeekLabel(p.date), value: p.value }))}
-                color="var(--chart-run)"
-                formatValue={(v) => `${Math.round(v)} bpm`}
-              />
-            )}
+            {!loading && !error && points && <HrvChart data={points} />}
           </div>
         </div>
       )}

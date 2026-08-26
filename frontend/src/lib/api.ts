@@ -101,6 +101,14 @@ export type Readiness = {
 
 export type RestingHrPoint = { date: string; value: number };
 
+export type HrvPoint = {
+  date: string;
+  value: number;
+  status: string | null;
+  baseline_low: number | null;
+  baseline_high: number | null;
+};
+
 export type CoachBrief = {
   brief: string;
   generated_at: string;
@@ -162,6 +170,15 @@ export async function fetchRestingHrHistory(days: number): Promise<RestingHrPoin
   const res = await fetch(`${CLIENT_API_BASE_URL}/readiness/resting-hr?days=${days}`, {
     cache: "no-store",
   });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.detail ?? `${res.status} ${res.statusText}`);
+  }
+  return res.json();
+}
+
+export async function fetchHrvHistory(days: number): Promise<HrvPoint[]> {
+  const res = await fetch(`${CLIENT_API_BASE_URL}/readiness/hrv?days=${days}`, { cache: "no-store" });
   if (!res.ok) {
     const body = await res.json().catch(() => null);
     throw new Error(body?.detail ?? `${res.status} ${res.statusText}`);

@@ -139,6 +139,32 @@ def fetch_resting_hr_baseline(client: Garmin, before: date, days: int = 30) -> f
     return sum(values) / len(values) if values else None
 
 
+def fetch_hrv_range(client: Garmin, start: date, end: date) -> list[dict]:
+    """Daily HRV summaries for each day in [start, end], oldest first --
+    last night's average, Garmin's status classification, and that day's
+    personal baseline ("balanced") range, for charting like the Garmin
+    Connect app does (a band behind the trend). Days with no HRV reading
+    (`lastNightAvg` null -- e.g. the watch wasn't worn) are omitted.
+    """
+    data = client.get_hrv_data_range(start.isoformat(), end.isoformat())
+    summaries = (data or {}).get("hrvSummaries") or []
+    out = []
+    for s in summaries:
+        if s.get("lastNightAvg") is None:
+            continue
+        baseline = s.get("baseline") or {}
+        out.append(
+            {
+                "date": s["calendarDate"],
+                "value": s["lastNightAvg"],
+                "status": s.get("status"),
+                "baseline_low": baseline.get("balancedLow"),
+                "baseline_high": baseline.get("balancedUpper"),
+            }
+        )
+    return out
+
+
 def fetch_resting_hr_range(client: Garmin, start: date, end: date) -> list[dict]:
     """Daily resting HR for each day in [start, end], oldest first. Days
     Garmin has no reading for are omitted, not zero-filled.

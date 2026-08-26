@@ -139,6 +139,14 @@ class RestingHrPointOut(BaseModel):
     value: float
 
 
+class HrvPointOut(BaseModel):
+    date: str
+    value: float
+    status: str | None
+    baseline_low: float | None
+    baseline_high: float | None
+
+
 class ReadinessComponentsOut(BaseModel):
     tsb: TsbComponentOut
     hrv: HrvComponentOut

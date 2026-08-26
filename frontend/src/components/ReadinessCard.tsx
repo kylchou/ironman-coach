@@ -1,6 +1,41 @@
+"use client";
+
+import { useState } from "react";
 import type { Readiness } from "@/lib/api";
 import { formatHoursMinutes } from "@/lib/format";
 import { RestingHrHistory } from "@/components/RestingHrHistory";
+import { HrvHistory } from "@/components/HrvHistory";
+
+const GLOSSARY: { term: string; definition: string }[] = [
+  { term: "CTL (Fitness)", definition: "Your average training load over the last 42 days. Rises slowly as you train consistently." },
+  { term: "ATL (Fatigue)", definition: "The same idea, but over just the last 7 days — reacts quickly to a hard week." },
+  { term: "TSB (Form)", definition: "Fitness minus Fatigue. Positive = fresher than your recent training would suggest. Negative = carrying more fatigue than usual." },
+];
+
+function Glossary() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-1">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+      >
+        <span className={`inline-block transition-transform ${open ? "rotate-90" : ""}`}>▸</span>
+        What are CTL, ATL, and TSB?
+      </button>
+      {open && (
+        <dl className="mt-2 space-y-1.5 rounded-md border border-slate-100 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800/50">
+          {GLOSSARY.map((g) => (
+            <div key={g.term} className="text-xs">
+              <dt className="font-medium text-slate-700 dark:text-slate-200">{g.term}</dt>
+              <dd className="text-slate-500 dark:text-slate-400">{g.definition}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </div>
+  );
+}
 
 // Status roles reserved for state, never reused for series identity. Not
 // every label gets a color -- "Ready" is the normal/expected state and
@@ -67,20 +102,19 @@ export function ReadinessCard({ readiness }: { readiness: Readiness }) {
           label="Form"
           detail={`${tsb.value >= 0 ? "+" : ""}${tsb.value.toFixed(1)} → ${readiness.form_label}`}
           score={tsb.score}
-          caption={
-            `Fitness (CTL) ${readiness.fitness_ctl.toFixed(1)} — your average training load over the last ` +
-            `42 days. Fatigue (ATL) ${readiness.fatigue_atl.toFixed(1)} — the same, over just the last 7 days. ` +
-            `Form (TSB) is Fitness minus Fatigue: positive means you're fresher than your recent training ` +
-            `would suggest, negative means you're carrying more fatigue than usual.`
-          }
-        />
+          caption={`Fitness (CTL) ${readiness.fitness_ctl.toFixed(1)} · Fatigue (ATL) ${readiness.fatigue_atl.toFixed(1)}`}
+        >
+          <Glossary />
+        </ComponentRow>
 
         <ComponentRow
           label="HRV"
           detail={hrv.status ? hrv.status.charAt(0) + hrv.status.slice(1).toLowerCase() : "No data"}
           score={hrv.score}
-          caption="Garmin's read on last night's heart-rate variability against your personal baseline range."
-        />
+          caption="Last night's heart-rate variability vs. your personal baseline range."
+        >
+          <HrvHistory />
+        </ComponentRow>
 
         <ComponentRow
           label="Sleep"

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Activity
-from app.schemas import DailyFitnessOut, ReadinessOut, RestingHrPointOut
+from app.schemas import DailyFitnessOut, HrvPointOut, ReadinessOut, RestingHrPointOut
 from app.services import garmin_client
 from app.services import readiness as readiness_service
 from app.services.training_load import compute_ctl_atl_tsb, daily_loads_from_activities, form_label
@@ -89,3 +89,19 @@ def resting_hr_history(days: int = Query(default=7, ge=1, le=90)):
     start = end - timedelta(days=days - 1)
     points = garmin_client.fetch_resting_hr_range(client, start, end)
     return [RestingHrPointOut(**p) for p in points]
+
+
+@router.get("/hrv", response_model=list[HrvPointOut])
+def hrv_history(days: int = Query(default=7, ge=1, le=90)):
+    """Daily HRV (last night's average) + status + that day's baseline
+    range for the last `days` days, for the dashboard's HRV chart.
+    """
+    try:
+        client = garmin_client.get_client()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+
+    end = date.today()
+    start = end - timedelta(days=days - 1)
+    points = garmin_client.fetch_hrv_range(client, start, end)
+    return [HrvPointOut(**p) for p in points]
