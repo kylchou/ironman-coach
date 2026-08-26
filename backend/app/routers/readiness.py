@@ -43,6 +43,7 @@ def today(db: Session = Depends(get_db)):
     hrv = garmin_client.fetch_hrv_status(client, today_date)
     resting_hr = garmin_client.fetch_resting_hr(client, today_date)
     resting_hr_baseline = garmin_client.fetch_resting_hr_baseline(client, today_date)
+    current = garmin_client.fetch_current_heart_rate(client, today_date)
 
     result = readiness_service.compute_readiness(
         tsb=tsb_row["tsb"],
@@ -61,6 +62,9 @@ def today(db: Session = Depends(get_db)):
         form_tsb=tsb_row["tsb"],
         form_label=form_label(tsb_row["tsb"]),
         components=result.components,
+        current_hr=current["current_hr"] if current else None,
+        current_hr_at=current["current_hr_at"] if current else None,
+        resting_hr_today=current["resting_hr"] if current else resting_hr,
     )
 
 

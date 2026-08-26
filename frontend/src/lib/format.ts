@@ -99,6 +99,11 @@ export function formatHoursMinutes(seconds: number | null): string {
   return `${h}h ${m}m`;
 }
 
+/** "7:16 PM" style clock time from a full ISO timestamp. */
+export function formatTimeOfDay(iso: string): string {
+  return new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
+
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
     month: "short",

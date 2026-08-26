@@ -6,7 +6,6 @@ import { formatWeekLabel } from "@/lib/format";
 import { LineChart } from "@/components/charts/LineChart";
 
 const RANGES = [
-  { label: "Today", days: 1 },
   { label: "This week", days: 7 },
   { label: "Last 4 weeks", days: 28 },
 ] as const;
@@ -73,15 +72,7 @@ export function RestingHrHistory() {
             {!loading && !error && points && points.length === 0 && (
               <p className="py-2 text-xs text-slate-400 dark:text-slate-500">No data for this range.</p>
             )}
-            {!loading && !error && points && points.length > 0 && days === 1 && (
-              <div className="flex flex-col items-center justify-center gap-0.5 py-3">
-                <div className="text-4xl font-semibold tabular-nums text-slate-900 dark:text-slate-50">
-                  {Math.round(points[0].value)}
-                </div>
-                <div className="text-xs font-medium text-slate-400 dark:text-slate-500">bpm today</div>
-              </div>
-            )}
-            {!loading && !error && points && points.length > 0 && days !== 1 && (
+            {!loading && !error && points && points.length > 0 && (
               <LineChart
                 title="Resting heart rate"
                 data={points.map((p) => ({ label: formatWeekLabel(p.date), value: p.value }))}

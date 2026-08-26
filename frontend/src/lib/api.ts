@@ -77,6 +77,9 @@ export type Readiness = {
   fatigue_atl: number;
   form_tsb: number;
   form_label: string;
+  current_hr: number | null;
+  current_hr_at: string | null;
+  resting_hr_today: number | null;
   components: {
     tsb: { value: number; score: number }; // always present -- we compute this ourselves
     hrv: { status: string | null; score: number | null };
