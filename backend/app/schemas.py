@@ -71,3 +71,24 @@ class CalendarEventOut(BaseModel):
     start: str  # ISO datetime, or a bare date ("2026-08-26") if all-day
     end: str
     all_day: bool
+
+
+class SportLoadOut(BaseModel):
+    load: float
+    distance_m: float
+    time_s: int
+    sessions: int
+
+
+class WeeklyLoadOut(BaseModel):
+    week_start: str  # ISO date (Monday)
+    by_sport: dict[str, SportLoadOut]
+    total_load: float
+
+
+class TrendPointOut(BaseModel):
+    week_start: str  # ISO date (Monday)
+    avg_speed_mps: float | None
+    avg_heartrate: float | None
+    distance_m: float
+    sessions: int

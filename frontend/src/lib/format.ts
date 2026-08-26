@@ -57,6 +57,39 @@ export function formatShortDate(iso: string): string {
   return new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, { weekday: "short" });
 }
 
+/** "Jun 29" style label for a week-start date. formatShortDate (weekday-only)
+ * is wrong for these -- every week_start is a Monday, so it'd print "Mon"
+ * for every single point.
+ */
+export function formatWeekLabel(iso: string): string {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+/** Converts avg_speed_mps into the unit each sport is normally read in, for
+ * charting: seconds/km for running, km/h for cycling, seconds/100m for
+ * swimming. Mirrors formatPace's convention but returns a plain number
+ * (chart axes need to do math on it), not a formatted string.
+ */
+export function paceOrSpeedValue(mps: number | null, sportType: string): number | null {
+  if (mps == null || mps <= 0) return null;
+  if (sportType === "Ride") return mps * 3.6;
+  if (sportType === "Swim") return 100 / mps;
+  return 1000 / mps;
+}
+
+export function paceOrSpeedAxisLabel(sportType: string): string {
+  if (sportType === "Ride") return "Speed (km/h)";
+  if (sportType === "Swim") return "Pace (min:sec / 100m, lower = faster)";
+  return "Pace (min:sec / km, lower = faster)";
+}
+
+export function formatPaceOrSpeedValue(value: number, sportType: string): string {
+  if (sportType === "Ride") return `${value.toFixed(1)} km/h`;
+  const m = Math.floor(value / 60);
+  const s = Math.round(value % 60);
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
     month: "short",

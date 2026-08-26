@@ -9,7 +9,7 @@ eventually recommend workouts and explain your data via AI.
 1. ✅ **Connect one workout API (Garmin) + database**
 2. ✅ **Basic dashboard (Next.js, reads from the API)**
 3. ✅ **Weather + calendar data**
-4. Training analytics (load, pace/HR trends)
+4. ✅ **Training analytics (load, pace/HR trends)**
 5. Recovery & fitness scores
 6. AI-generated recommendations & explanations
 7. (later) generalize beyond a single athlete
@@ -125,6 +125,25 @@ HTTPS -- so `httpx` calls avoid the problem entirely. See `services/calendar_cli
    - Application type: **Web application**
    - Authorized redirect URIs: `http://localhost:8000/auth/google/callback`
    - Copy the **Client ID** and **Client Secret** into `backend/.env`
+
+## Training analytics
+
+- `GET /analytics/weekly-load?weeks=12` — training load per week, broken down by sport (Run/Ride/Swim)
+- `GET /analytics/trends?sport=Run&weeks=12` — weekly avg pace/speed and heart rate for one sport
+
+**"Load" is a self-calibrating estimate, not clinical TRIMP.** Real TRIMP needs the athlete's
+resting HR and a lab-measured max HR, neither of which is configured anywhere in this app.
+Instead, each activity's intensity is estimated relative to the highest heart rate observed
+anywhere in your own synced history, squared to penalize higher intensity more than low
+(loosely mirroring TRIMP's exponential weighting), then multiplied by duration. Activities with
+no HR data fall back to a fixed moderate-intensity assumption so they still count toward
+weekly volume. See `backend/app/services/training_load.py` for the exact formula and reasoning
+— worth revisiting if Phase 5's recovery/fitness scores want something more rigorous.
+
+The dashboard's **Analytics** page (`/analytics`) charts this: a stacked bar of weekly load by
+sport, plus pace/HR trend lines with a sport switcher. Charts were built following the
+`dataviz` skill's method (validated categorical palette — Run/Ride/Swim get fixed slots 1/2/3,
+never cycled — checked with its `validate_palette.js` script rather than eyeballed).
 
 ## What you still need to do
 

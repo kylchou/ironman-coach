@@ -48,6 +48,27 @@ export type CalendarEvent = {
   all_day: boolean;
 };
 
+export type SportLoad = {
+  load: number;
+  distance_m: number;
+  time_s: number;
+  sessions: number;
+};
+
+export type WeeklyLoad = {
+  week_start: string;
+  by_sport: Record<"Run" | "Ride" | "Swim", SportLoad>;
+  total_load: number;
+};
+
+export type TrendPoint = {
+  week_start: string;
+  avg_speed_mps: number | null;
+  avg_heartrate: number | null;
+  distance_m: number;
+  sessions: number;
+};
+
 const API_BASE_URL = process.env.API_BASE_URL ?? "http://localhost:8000";
 
 /** Fetches from the FastAPI backend. Runs server-side (this is only called
@@ -81,6 +102,24 @@ export async function fetchUpcomingEvents(days = 7): Promise<CalendarEvent[]> {
   const res = await fetch(`${API_BASE_URL}/calendar/events?days=${days}`, { cache: "no-store" });
   if (!res.ok) {
     throw new Error(`Failed to fetch calendar: ${res.status} ${await res.text()}`);
+  }
+  return res.json();
+}
+
+export async function fetchWeeklyLoad(weeks = 12): Promise<WeeklyLoad[]> {
+  const res = await fetch(`${API_BASE_URL}/analytics/weekly-load?weeks=${weeks}`, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch weekly load: ${res.status} ${await res.text()}`);
+  }
+  return res.json();
+}
+
+export async function fetchTrends(sport: "Run" | "Ride" | "Swim", weeks = 12): Promise<TrendPoint[]> {
+  const res = await fetch(`${API_BASE_URL}/analytics/trends?sport=${sport}&weeks=${weeks}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch trends: ${res.status} ${await res.text()}`);
   }
   return res.json();
 }

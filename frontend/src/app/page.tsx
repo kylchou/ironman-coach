@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   fetchActivities,
   fetchCurrentWeather,
@@ -58,8 +59,18 @@ export default async function Home({
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
-      <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Ironman Coach</h1>
-      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Last 28 days, by sport</p>
+      <div className="flex items-baseline justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Ironman Coach</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Last 28 days, by sport</p>
+        </div>
+        <Link
+          href="/analytics"
+          className="text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+        >
+          Analytics →
+        </Link>
+      </div>
 
       {loadError ? (
         <div className="mt-6 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-300">
