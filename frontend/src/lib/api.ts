@@ -80,10 +80,26 @@ export type Readiness = {
   components: {
     tsb: { value: number; score: number }; // always present -- we compute this ourselves
     hrv: { status: string | null; score: number | null };
-    sleep: { value: number | null; qualifier: string | null; score: number | null };
-    resting_hr: { value: number | null; baseline: number | null; score: number | null };
+    sleep: {
+      value: number | null;
+      qualifier: string | null;
+      score: number | null;
+      total_sleep_seconds: number | null;
+      deep_sleep_seconds: number | null;
+      light_sleep_seconds: number | null;
+      rem_sleep_seconds: number | null;
+      awake_seconds: number | null;
+      awake_count: number | null;
+      average_heartrate: number | null;
+      average_respiration: number | null;
+      average_spo2: number | null;
+      average_stress: number | null;
+    };
+    resting_hr: { value: number | null; baseline: number | null; baseline_days: number; score: number | null };
   };
 };
+
+export type RestingHrPoint = { date: string; value: number };
 
 export type CoachBrief = {
   brief: string;
@@ -135,6 +151,20 @@ export async function fetchReadiness(): Promise<Readiness> {
   const res = await fetch(`${API_BASE_URL}/readiness/today`, { cache: "no-store" });
   if (!res.ok) {
     throw new Error(`Failed to fetch readiness: ${res.status} ${await res.text()}`);
+  }
+  return res.json();
+}
+
+/** Client-side fetch (used from RestingHrHistory, a Client Component) --
+ * see CLIENT_API_BASE_URL above for why this one isn't server-only.
+ */
+export async function fetchRestingHrHistory(days: number): Promise<RestingHrPoint[]> {
+  const res = await fetch(`${CLIENT_API_BASE_URL}/readiness/resting-hr?days=${days}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.detail ?? `${res.status} ${res.statusText}`);
   }
   return res.json();
 }

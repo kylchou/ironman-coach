@@ -148,10 +148,15 @@ never cycled — checked with its `validate_palette.js` script rather than eyeba
 ## Recovery & readiness score
 
 - `GET /readiness/today` — a 0-100 composite score + label (Primed / Ready / Manage fatigue /
-  Recover), shown as the hero number at the top of the dashboard
+  Recover), shown as the hero number at the top of the dashboard, with every component
+  explained inline in the UI (not just labeled — the card spells out what CTL/ATL/TSB mean and
+  where the resting-HR baseline comes from) and a full sleep-stage breakdown (deep/light/REM/
+  awake, HR, respiration, SpO2, stress) pulled from everything Garmin's sleep API exposes
 - `GET /readiness/history?days=90` — daily Fitness (CTL) / Fatigue (ATL) / Form (TSB) series,
   not yet charted anywhere (would make a nice Performance-Management-Chart-style addition to
   `/analytics` later)
+- `GET /readiness/resting-hr?days=N` — daily resting HR for the last N days; powers an
+  expandable "Resting HR history" section on the dashboard (Today / This week / Last 4 weeks)
 
 **What it's built from**, blended by weight (missing components are simply left out and the
 rest renormalized, rather than the score failing outright):
@@ -166,8 +171,8 @@ rest renormalized, rather than the score failing outright):
 **Fitness/Fatigue/Form** uses the same model TrainingPeaks' Performance Management Chart is
 built on (Banister impulse-response): CTL is a 42-day rolling average of daily training load,
 ATL the 7-day version, TSB = CTL − ATL. This is **not** clinical TRIMP — see
-`backend/app/services/training_load.py` for why — and none of this is a medical score; it's a
-heuristic worth calibrating against how you actually feel once you've used it a while.
+`backend/app/services/training_load.py` for why. Worth calibrating against how you actually
+feel once you've used it a while.
 
 **A real bug caught before shipping:** the per-activity load formula used minutes where the
 TSS-style convention it's supposed to follow expects hours, inflating every load number ~60x.
@@ -295,3 +300,11 @@ block with npm/npx otherwise).
   with "An Application Control policy has blocked this file". Any future dependency that pulls
   in `cryptography` (directly or transitively -- lots of auth/crypto-adjacent packages do) will
   hit the same wall. Worth checking for early if a new library's import fails mysteriously.
+- **Frontend date-parsing gotcha:** a bare `"YYYY-MM-DD"` string (no time/offset -- e.g.
+  resting-HR history dates) parses as UTC midnight per the JS spec. Formatting it with
+  `toLocaleDateString()` then renders in the *browser's local* timezone, which silently prints
+  the previous day anywhere west of UTC. Full ISO timestamps (with an offset, like activity
+  `start_date`) don't have this problem -- only bare dates do. Fix is to anchor to local noon
+  first (`` new Date(`${isoDate}T12:00:00`) ``) before formatting; see `formatBareDate` /
+  `formatWeekLabel` / `formatShortDate` in `frontend/src/lib/format.ts`, and use the bare-date
+  variant for any new bare-date field rather than reaching for the timestamp one (`formatDate`).

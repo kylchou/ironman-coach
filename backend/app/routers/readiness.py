@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Activity
-from app.schemas import DailyFitnessOut, ReadinessOut
+from app.schemas import DailyFitnessOut, ReadinessOut, RestingHrPointOut
 from app.services import garmin_client
 from app.services import readiness as readiness_service
 from app.services.training_load import compute_ctl_atl_tsb, daily_loads_from_activities, form_label
@@ -36,10 +36,10 @@ def today(db: Session = Depends(get_db)):
     except RuntimeError as exc:
         raise HTTPException(status_code=401, detail=str(exc)) from exc
 
-    sleep = garmin_client.fetch_sleep_score(client, today_date)
+    sleep = garmin_client.fetch_sleep_detail(client, today_date)
     if sleep is None:
         # This morning's sleep may not have synced yet -- fall back a day.
-        sleep = garmin_client.fetch_sleep_score(client, today_date - timedelta(days=1))
+        sleep = garmin_client.fetch_sleep_detail(client, today_date - timedelta(days=1))
     hrv = garmin_client.fetch_hrv_status(client, today_date)
     resting_hr = garmin_client.fetch_resting_hr(client, today_date)
     resting_hr_baseline = garmin_client.fetch_resting_hr_baseline(client, today_date)
@@ -73,3 +73,19 @@ def history(days: int = Query(default=90, ge=7, le=730), db: Session = Depends(g
     start = end - timedelta(days=days)
     rows = _ctl_atl_tsb_for_range(db, start, end)
     return [DailyFitnessOut(date=r["date"].isoformat(), ctl=r["ctl"], atl=r["atl"], tsb=r["tsb"]) for r in rows]
+
+
+@router.get("/resting-hr", response_model=list[RestingHrPointOut])
+def resting_hr_history(days: int = Query(default=7, ge=1, le=90)):
+    """Daily resting HR for the last `days` days (1 = today only), for the
+    dashboard's expandable RHR history view.
+    """
+    try:
+        client = garmin_client.get_client()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+
+    end = date.today()
+    start = end - timedelta(days=days - 1)
+    points = garmin_client.fetch_resting_hr_range(client, start, end)
+    return [RestingHrPointOut(**p) for p in points]

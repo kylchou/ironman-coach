@@ -86,7 +86,7 @@ def _readiness_summary(db: Session) -> str:
     sleep = hrv = resting_hr = resting_hr_baseline = None
     try:
         client = garmin_client.get_client()
-        sleep = garmin_client.fetch_sleep_score(client, today) or garmin_client.fetch_sleep_score(
+        sleep = garmin_client.fetch_sleep_detail(client, today) or garmin_client.fetch_sleep_detail(
             client, today - timedelta(days=1)
         )
         hrv = garmin_client.fetch_hrv_status(client, today)

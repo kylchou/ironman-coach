@@ -90,8 +90,31 @@ export function formatPaceOrSpeedValue(value: number, sportType: string): string
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+/** "6h 28m" style duration, for sleep stage breakdowns. */
+export function formatHoursMinutes(seconds: number | null): string {
+  if (seconds == null) return "—";
+  const h = Math.floor(seconds / 3600);
+  const m = Math.round((seconds % 3600) / 60);
+  if (h === 0) return `${m}m`;
+  return `${h}h ${m}m`;
+}
+
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+/** Same output as formatDate, but for a BARE "YYYY-MM-DD" string (no time/
+ * offset) -- e.g. resting-HR history dates. Bare date strings parse as UTC
+ * midnight per spec; formatDate would then render in the browser's local
+ * timezone and silently print the previous day west of UTC. Anchor to noon
+ * first, same fix as formatWeekLabel/formatShortDate use.
+ */
+export function formatBareDate(isoDate: string): string {
+  return new Date(`${isoDate}T12:00:00`).toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
     year: "numeric",

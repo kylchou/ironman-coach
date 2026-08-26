@@ -78,16 +78,32 @@ def fetch_activities(client: Garmin, start: int = 0, limit: int = 100) -> list[d
 # that date, so readiness.py can degrade gracefully instead of failing outright.
 
 
-def fetch_sleep_score(client: Garmin, d: date) -> dict | None:
-    """Garmin's own 0-100 sleep score + qualifier for the sleep period ending
-    on the morning of `d`. None if no sleep was recorded (e.g. tonight's
+def fetch_sleep_detail(client: Garmin, d: date) -> dict | None:
+    """Garmin's full sleep breakdown for the sleep period ending on the
+    morning of `d`: overall score, stage durations, and the vitals Garmin
+    tracks alongside sleep. None if no sleep was recorded (e.g. tonight's
     sleep hasn't synced yet, or the device doesn't track sleep).
     """
     data = client.get_sleep_data(d.isoformat())
-    overall = (data or {}).get("dailySleepDTO", {}).get("sleepScores", {}).get("overall")
+    dto = (data or {}).get("dailySleepDTO") or {}
+    overall = dto.get("sleepScores", {}).get("overall")
     if not overall or overall.get("value") is None:
         return None
-    return {"score": overall["value"], "qualifier": overall.get("qualifierKey")}
+
+    return {
+        "score": overall["value"],
+        "qualifier": overall.get("qualifierKey"),
+        "total_sleep_seconds": dto.get("sleepTimeSeconds"),
+        "deep_sleep_seconds": dto.get("deepSleepSeconds"),
+        "light_sleep_seconds": dto.get("lightSleepSeconds"),
+        "rem_sleep_seconds": dto.get("remSleepSeconds"),
+        "awake_seconds": dto.get("awakeSleepSeconds"),
+        "awake_count": dto.get("awakeCount"),
+        "average_heartrate": dto.get("avgHeartRate"),
+        "average_respiration": dto.get("averageRespirationValue"),
+        "average_spo2": dto.get("averageSpO2Value"),
+        "average_stress": dto.get("avgSleepStress"),
+    }
 
 
 def fetch_hrv_status(client: Garmin, d: date) -> dict | None:
@@ -121,3 +137,15 @@ def fetch_resting_hr_baseline(client: Garmin, before: date, days: int = 30) -> f
     entries = client.get_rhr_daily(start.isoformat(), end.isoformat()) or []
     values = [e["value"] for e in entries if e and e.get("value") is not None]
     return sum(values) / len(values) if values else None
+
+
+def fetch_resting_hr_range(client: Garmin, start: date, end: date) -> list[dict]:
+    """Daily resting HR for each day in [start, end], oldest first. Days
+    Garmin has no reading for are omitted, not zero-filled.
+    """
+    entries = client.get_rhr_daily(start.isoformat(), end.isoformat()) or []
+    return [
+        {"date": e["calendarDate"], "value": e["value"]}
+        for e in entries
+        if e and e.get("value") is not None and e.get("calendarDate")
+    ]

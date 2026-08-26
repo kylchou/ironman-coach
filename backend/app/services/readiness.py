@@ -16,6 +16,7 @@ actually tracks how recovered you feel day to day.
 from dataclasses import dataclass, field
 
 WEIGHTS = {"tsb": 35, "hrv": 30, "sleep": 25, "rhr": 10}
+RHR_BASELINE_DAYS = 30  # must match garmin_client.fetch_resting_hr_baseline's default
 
 HRV_STATUS_SCORES = {"BALANCED": 100, "UNBALANCED": 55, "LOW": 25}
 HRV_STATUS_DEFAULT = 60  # an HRV status Garmin reports that isn't in the map above
@@ -84,10 +85,16 @@ def compute_readiness(
             "tsb": {"value": tsb, "score": scores["tsb"]},
             "hrv": {"status": hrv_status["status"] if hrv_status else None, "score": scores["hrv"]},
             "sleep": {
+                **(sleep or {}),
                 "value": sleep["score"] if sleep else None,
                 "qualifier": sleep["qualifier"] if sleep else None,
                 "score": scores["sleep"],
             },
-            "resting_hr": {"value": resting_hr, "baseline": resting_hr_baseline, "score": scores["rhr"]},
+            "resting_hr": {
+                "value": resting_hr,
+                "baseline": resting_hr_baseline,
+                "baseline_days": RHR_BASELINE_DAYS,
+                "score": scores["rhr"],
+            },
         },
     )

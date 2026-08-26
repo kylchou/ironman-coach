@@ -115,12 +115,28 @@ class SleepComponentOut(BaseModel):
     value: float | None
     qualifier: str | None
     score: float | None
+    total_sleep_seconds: int | None = None
+    deep_sleep_seconds: int | None = None
+    light_sleep_seconds: int | None = None
+    rem_sleep_seconds: int | None = None
+    awake_seconds: int | None = None
+    awake_count: int | None = None
+    average_heartrate: float | None = None
+    average_respiration: float | None = None
+    average_spo2: float | None = None
+    average_stress: float | None = None
 
 
 class RestingHrComponentOut(BaseModel):
     value: float | None
     baseline: float | None
+    baseline_days: int
     score: float | None
+
+
+class RestingHrPointOut(BaseModel):
+    date: str
+    value: float
 
 
 class ReadinessComponentsOut(BaseModel):
