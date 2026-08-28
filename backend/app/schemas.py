@@ -168,7 +168,3 @@ class ReadinessOut(BaseModel):
     form_tsb: float
     form_label: str
     components: ReadinessComponentsOut
-    # Live vitals -- informational only, not part of the composite score.
-    current_hr: float | None = None
-    current_hr_at: str | None = None
-    resting_hr_today: float | None = None

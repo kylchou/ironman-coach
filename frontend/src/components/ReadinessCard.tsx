@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Readiness } from "@/lib/api";
-import { formatHoursMinutes, formatTimeOfDay } from "@/lib/format";
+import { formatHoursMinutes } from "@/lib/format";
 import { RestingHrHistory } from "@/components/RestingHrHistory";
 import { HrvHistory } from "@/components/HrvHistory";
 
@@ -96,25 +96,6 @@ export function ReadinessCard({ readiness }: { readiness: Readiness }) {
           <div className="mt-1 text-xs text-slate-400 dark:text-slate-500">Today&apos;s readiness</div>
         </div>
       </div>
-
-      {readiness.current_hr != null && (
-        <div className="mt-4 flex items-center gap-4 rounded-md bg-rose-50 px-4 py-3 dark:bg-rose-950/20">
-          <span className="text-2xl">❤️</span>
-          <div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl font-semibold tabular-nums text-slate-900 dark:text-slate-50">
-                {Math.round(readiness.current_hr)}
-              </span>
-              <span className="text-sm text-slate-500 dark:text-slate-400">bpm right now</span>
-            </div>
-            <div className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
-              {readiness.current_hr_at && `Updated ${formatTimeOfDay(readiness.current_hr_at)}`}
-              {readiness.resting_hr_today != null &&
-                ` · Resting today: ${Math.round(readiness.resting_hr_today)} bpm`}
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="mt-4 divide-y divide-slate-100 border-t border-slate-100 dark:divide-slate-800 dark:border-slate-800">
         <ComponentRow

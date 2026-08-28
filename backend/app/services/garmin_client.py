@@ -9,7 +9,7 @@ caches session tokens to .garmin_tokens/, which this module then resumes.
 Re-run that script if the cached session ever expires or gets revoked.
 """
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, timedelta
 from pathlib import Path
 
 from garminconnect import Garmin
@@ -137,28 +137,6 @@ def fetch_resting_hr_baseline(client: Garmin, before: date, days: int = 30) -> f
     entries = client.get_rhr_daily(start.isoformat(), end.isoformat()) or []
     values = [e["value"] for e in entries if e and e.get("value") is not None]
     return sum(values) / len(values) if values else None
-
-
-def fetch_current_heart_rate(client: Garmin, d: date) -> dict | None:
-    """Most recent intraday heart-rate reading for `d` (defaults to today in
-    practice), plus that day's resting HR from the same payload. None if the
-    device hasn't reported any readings yet today.
-    """
-    data = client.get_heart_rates(d.isoformat())
-    values = (data or {}).get("heartRateValues") or []
-    if not values:
-        return None
-
-    last_timestamp_ms, last_bpm = values[-1]
-    if last_bpm is None:
-        return None
-
-    return {
-        "current_hr": last_bpm,
-        # heartRateValues timestamps are epoch milliseconds, GMT.
-        "current_hr_at": datetime.fromtimestamp(last_timestamp_ms / 1000, tz=timezone.utc).isoformat(),
-        "resting_hr": data.get("restingHeartRate"),
-    }
 
 
 def fetch_hrv_range(client: Garmin, start: date, end: date) -> list[dict]:
