@@ -21,6 +21,21 @@ recommendations too, once you drop in an API key.
 - **Frontend:** Next.js 16 (App Router, TypeScript, Tailwind CSS 4). Server Components fetch
   directly from the backend, nothing client-side for the initial load.
 
+## Tests
+
+`backend/tests/` covers the pure-math parts -- training load, CTL/ATL/TSB, and the readiness
+composite score. Those are exactly the spots that have actually broken silently before (the
+minutes-vs-hours load bug, the timezone bug), so they're where a regression test earns the most.
+Nothing else is covered yet -- no DB, no frontend, no Garmin/Calendar/Canvas/Gemini integration
+tests, since those all need a live external connection to really verify.
+
+```bash
+cd backend
+.venv\Scripts\activate
+pip install -r requirements-dev.txt
+pytest
+```
+
 ## Project layout
 
 ```
