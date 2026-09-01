@@ -168,3 +168,31 @@ class ReadinessOut(BaseModel):
     form_tsb: float
     form_label: str
     components: ReadinessComponentsOut
+
+
+class TaskOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    title: str
+    description: str | None
+    due_date: datetime | None
+    completed: bool
+    completed_at: datetime | None
+    source: str
+    source_url: str | None
+    course_name: str | None
+    created_at: datetime
+
+
+class TaskCreateIn(BaseModel):
+    title: str
+    description: str | None = None
+    due_date: datetime | None = None
+
+
+class TaskUpdateIn(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    due_date: datetime | None = None
+    completed: bool | None = None

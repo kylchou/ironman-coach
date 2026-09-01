@@ -12,7 +12,8 @@ eventually recommend workouts and explain your data via AI.
 4. ✅ **Training analytics (load, pace/HR trends)**
 5. ✅ **Recovery & fitness scores**
 6. ✅ **AI-generated recommendations & explanations** (code done -- needs your own free API key, see below)
-7. (later) generalize beyond a single athlete
+7. ✅ **Unified to-do list (manual tasks + Canvas assignments)** -- extends the original plan; not
+   yet: generalizing beyond a single athlete
 
 ## Stack
 
@@ -209,6 +210,38 @@ rather than changing code.
    ```
 3. Restart the backend, then click **Get today's brief** on the dashboard.
 
+## Tasks (Phase 7 -- beyond the original plan)
+
+One unified to-do list -- manual tasks and synced Canvas assignments together, soonest due
+date first, completed items sink to the bottom rather than disappearing. This is the start of
+turning the app into more of a daily hub (training + school + life) rather than training-only.
+
+- `GET /tasks?include_completed=` / `POST /tasks` / `PATCH /tasks/{id}` / `DELETE /tasks/{id}`
+  — plain CRUD for manual tasks
+- `POST /tasks/sync-canvas` — pulls assignments Canvas considers still needing action (its own
+  "to-do" concept, not every assignment that ever existed) and upserts them into the same table
+
+Everything lives in one `tasks` table (`source` = `"manual"` or `"canvas"`) rather than separate
+Assignment/Todo tables — the whole point is one list instead of checking Canvas and a to-do app
+separately.
+
+**Canvas integration is unverified** — built from documented API shapes
+(`backend/app/services/canvas_client.py`), not checked against a real account/token like
+everything else in this codebase was before being called done. First real sync will be the real
+test; expect to fix field-name mismatches if Canvas's actual response differs from the docs.
+
+### Setup
+
+1. In Canvas: **Account** (left sidebar) → **Settings** → scroll to **Approved Integrations** →
+   **+ New Access Token**. Purpose can be anything, leave expiry blank → **Generate Token**.
+   Copy it now — Canvas only shows it once.
+2. Add to `backend/.env`:
+   ```
+   CANVAS_DOMAIN=your-school.instructure.com
+   CANVAS_ACCESS_TOKEN=your_token_here
+   ```
+3. Restart the backend, then click **Sync Canvas** on the dashboard's To-Do card.
+
 ## What you still need to do
 
 ### 1. Log in to Garmin (one-time, interactive)
@@ -263,7 +296,15 @@ curl http://localhost:8000/auth/google/status
 curl "http://localhost:8000/calendar/events?days=7"
 ```
 
-### 6. Run the frontend (in a second terminal, backend still running)
+### 6. Set up Canvas (see "Tasks" section above) and sync
+
+Once `CANVAS_ACCESS_TOKEN` is in `backend/.env` and the backend has restarted:
+
+```bash
+curl -X POST http://localhost:8000/tasks/sync-canvas
+```
+
+### 7. Run the frontend (in a second terminal, backend still running)
 
 ```bash
 cd frontend
@@ -308,3 +349,13 @@ block with npm/npx otherwise).
   first (`` new Date(`${isoDate}T12:00:00`) ``) before formatting; see `formatBareDate` /
   `formatWeekLabel` / `formatShortDate` in `frontend/src/lib/format.ts`, and use the bare-date
   variant for any new bare-date field rather than reaching for the timestamp one (`formatDate`).
+- **Backend `created_at` timezone bug (fixed 2026-09-01):** every model's `created_at` used
+  `default=datetime.utcnow` -- a *naive* datetime with no timezone tag. psycopg2 stores a naive
+  datetime into a `timestamptz` column using the session's local timezone, not literal UTC, so
+  every `created_at` in the app (Athlete, Activity, DailyWeather, and initially Task) was
+  silently off by the local UTC offset. Caught by comparing a task's `created_at` against its
+  `completed_at` (set via the already-correct `datetime.now(timezone.utc)`) and finding a 4-hour
+  gap between two timestamps set milliseconds apart. Fixed via a shared `_utcnow()` helper in
+  `models.py` -- use that for any new `created_at`-style default, never bare `datetime.utcnow`.
+  Existing rows from before the fix keep their wrong stored value (harmless -- nothing reads
+  `created_at` for business logic, only display/sort tie-breaking), only new rows are correct.

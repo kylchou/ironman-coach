@@ -114,6 +114,19 @@ export type CoachBrief = {
   generated_at: string;
 };
 
+export type Task = {
+  id: number;
+  title: string;
+  description: string | null;
+  due_date: string | null;
+  completed: boolean;
+  completed_at: string | null;
+  source: "manual" | "canvas" | string;
+  source_url: string | null;
+  course_name: string | null;
+  created_at: string;
+};
+
 const API_BASE_URL = process.env.API_BASE_URL ?? "http://localhost:8000";
 // Client component (CoachCard) calls this directly from the browser, so it
 // needs the NEXT_PUBLIC_ prefix -- server-only API_BASE_URL isn't visible
@@ -179,6 +192,54 @@ export async function fetchRestingHrHistory(days: number): Promise<RestingHrPoin
 
 export async function fetchHrvHistory(days: number): Promise<HrvPoint[]> {
   const res = await fetch(`${CLIENT_API_BASE_URL}/readiness/hrv?days=${days}`, { cache: "no-store" });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.detail ?? `${res.status} ${res.statusText}`);
+  }
+  return res.json();
+}
+
+export async function fetchTasks(includeCompleted = false): Promise<Task[]> {
+  const res = await fetch(`${API_BASE_URL}/tasks?include_completed=${includeCompleted}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch tasks: ${res.status} ${await res.text()}`);
+  }
+  return res.json();
+}
+
+// The rest of the task functions run client-side (from TaskList, a Client
+// Component) since they're triggered by user actions -- add/check-off/
+// delete/sync -- not the initial page load. See CLIENT_API_BASE_URL above.
+
+export async function createTask(title: string, dueDate?: string): Promise<Task> {
+  const res = await fetch(`${CLIENT_API_BASE_URL}/tasks`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, due_date: dueDate || null }),
+  });
+  if (!res.ok) throw new Error(`Failed to create task: ${res.status} ${await res.text()}`);
+  return res.json();
+}
+
+export async function updateTask(id: number, patch: { completed?: boolean; title?: string }): Promise<Task> {
+  const res = await fetch(`${CLIENT_API_BASE_URL}/tasks/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+  if (!res.ok) throw new Error(`Failed to update task: ${res.status} ${await res.text()}`);
+  return res.json();
+}
+
+export async function deleteTask(id: number): Promise<void> {
+  const res = await fetch(`${CLIENT_API_BASE_URL}/tasks/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`Failed to delete task: ${res.status} ${await res.text()}`);
+}
+
+export async function syncCanvasTasks(): Promise<{ fetched: number; created: number; updated: number }> {
+  const res = await fetch(`${CLIENT_API_BASE_URL}/tasks/sync-canvas`, { method: "POST" });
   if (!res.ok) {
     const body = await res.json().catch(() => null);
     throw new Error(body?.detail ?? `${res.status} ${res.statusText}`);

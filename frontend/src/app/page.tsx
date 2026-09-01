@@ -3,10 +3,12 @@ import {
   fetchActivities,
   fetchCurrentWeather,
   fetchReadiness,
+  fetchTasks,
   fetchUpcomingEvents,
   type Activity,
   type CalendarEvent,
   type Readiness,
+  type Task,
   type WeatherNow,
 } from "@/lib/api";
 import { summarizeBySport } from "@/lib/summary";
@@ -17,6 +19,7 @@ import { WeatherCard } from "@/components/WeatherCard";
 import { UpcomingEvents } from "@/components/UpcomingEvents";
 import { ReadinessCard } from "@/components/ReadinessCard";
 import { CoachCard } from "@/components/CoachCard";
+import { TaskList } from "@/components/TaskList";
 
 export default async function Home({
   searchParams,
@@ -65,6 +68,17 @@ export default async function Home({
     readinessError = err instanceof Error ? err.message : "Unknown error fetching readiness.";
   }
 
+  let tasks: Task[] = [];
+  let tasksError: string | null = null;
+  try {
+    // include_completed=true -- TaskList sorts completed to the bottom and
+    // shows them struck through, rather than hiding them the instant
+    // they're checked off. See TaskList's refresh() for the same choice.
+    tasks = await fetchTasks(true);
+  } catch (err) {
+    tasksError = err instanceof Error ? err.message : "Unknown error fetching tasks.";
+  }
+
   const summaries = summarizeBySport(activities, 28);
   const visibleActivities =
     activeSport === "All" ? activities : activities.filter((a) => a.sport_type === activeSport);
@@ -102,6 +116,16 @@ export default async function Home({
               </p>
             )}
             <CoachCard />
+          </div>
+
+          <div className="mt-6">
+            {tasksError ? (
+              <p className="text-sm text-slate-400 dark:text-slate-500">
+                Tasks unavailable: {tasksError}
+              </p>
+            ) : (
+              <TaskList initialTasks={tasks} />
+            )}
           </div>
 
           <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">

@@ -31,6 +31,12 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.5-flash"
 
+    # Canvas (Phase 7 -- unified to-do list). Personal access token, from
+    # Canvas: Account -> Settings -> New Access Token. This is a real
+    # credential -- backend/.env is gitignored, never commit it.
+    canvas_domain: str = "gatech.instructure.com"
+    canvas_access_token: str = ""
+
     secret_key: str = "dev-secret"
     frontend_origin: str = "http://localhost:3000"
 
